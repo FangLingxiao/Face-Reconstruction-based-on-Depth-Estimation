@@ -116,7 +116,7 @@ def switch_nums(point_nums):
     else:
         return (point_nums[1], point_nums[0])
 
-def loop_subdiv(input_points, input_faces):
+def loop_subdiv(input_points, input_faces, input_uvs):
     edges_faces = get_edges_faces(input_points, input_faces)
     faces_points = get_faces_points(input_points, input_faces, edges_faces)
     edge_points = get_edge_points(edges_faces, faces_points)
@@ -136,17 +136,37 @@ def loop_subdiv(input_points, input_faces):
         next_pointnum += 1
 
     new_faces = []
+    new_uvs = []
 
     for oldfacenum, oldface in enumerate(input_faces):
         if len(oldface) == 3:
             a, b, c = oldface
+            uv_a, uv_b, uv_c = input_uvs[a], input_uvs[b], input_uvs[c]
+
             edge_point_ab = edge_point_nums[switch_nums((a, b))]
             edge_point_ca = edge_point_nums[switch_nums((c, a))]
             edge_point_bc = edge_point_nums[switch_nums((b, c))]
+
+            uv_ab = [(uv_a[0] + uv_b[0]) / 2, (uv_a[1] + uv_b[1]) / 2]
+            uv_ca = [(uv_c[0] + uv_a[0]) / 2, (uv_c[1] + uv_a[1]) / 2]
+            uv_bc = [(uv_b[0] + uv_c[0]) / 2, (uv_b[1] + uv_c[1]) / 2]
 
             new_faces.append((a, edge_point_ab, edge_point_ca))
             new_faces.append((b, edge_point_bc, edge_point_ab))
             new_faces.append((c, edge_point_ca, edge_point_bc))
             new_faces.append((edge_point_ca, edge_point_ab, edge_point_bc))
 
-    return new_points, new_faces
+            new_uvs.append(uv_a)
+            new_uvs.append(uv_ab)
+            new_uvs.append(uv_ca)
+            new_uvs.append(uv_b)
+            new_uvs.append(uv_bc)
+            new_uvs.append(uv_ab)
+            new_uvs.append(uv_c)
+            new_uvs.append(uv_ca)
+            new_uvs.append(uv_bc)
+            new_uvs.append(uv_ca)
+            new_uvs.append(uv_ab)
+            new_uvs.append(uv_bc)
+
+    return new_points, new_faces, new_uvs

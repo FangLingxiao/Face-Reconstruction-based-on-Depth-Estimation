@@ -19,6 +19,10 @@ def parse_arguments():
                         help='Field of view in degrees.')
     parser.add_argument('--depth_scale', dest='depth_scale', type=float, default=1.0,
                         help='Depth scale factor.')
+    parser.add_argument('--scale_factor', dest='scale_factor', type=float, default=1.0,
+                        help='Depth map interpolation scale factor.')
+    parser.add_argument('--subdivisions', dest='subdivisions', type=int, default=0,
+                        help='Number of mesh subdivisions.')
     return parser.parse_args()
 
 def create_mtl(mtl_path, texture_path):
@@ -89,7 +93,7 @@ def create_obj(depth_path, obj_path, mtl_path, fov, depth_scale, scale_factor, s
             f.write("vt {:.6f} {:.6f}\n".format(*uv))
 
         for face in faces:
-            f.write("f {}/{} {}/{} {}/{}\n".format(*(vete(*vt) for vt in zip(face, face))))
+            f.write(f"f {' '.join(f'{vt[0]}/{vt[1]}' for vt in zip(face, face))}\n")
 
 def vete(v, vt):
     return "{}/{}".format(v + 1, vt + 1)
