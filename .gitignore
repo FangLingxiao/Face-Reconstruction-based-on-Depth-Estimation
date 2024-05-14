@@ -1,3 +1,8 @@
 venv/
-output/in-the-wild_example_lcm/depth_npy/
+output
 vrn-unguided.t7
+vrn-unguided.cpython-310.pyc
+/__pycache__/
+depth2mesh/__pycache__/
+image/
+.ipynb_checkpoints/
