@@ -1,4 +1,0 @@
-omegaconf
-pandas
-tabulate
-torchvision==0.15.2

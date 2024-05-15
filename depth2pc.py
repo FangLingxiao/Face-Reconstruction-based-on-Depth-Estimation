@@ -1,60 +1,71 @@
-import numpy as np
 import cv2
-import math
-import os
+import numpy as np
 
-
-def depth_to_point_cloud(depth_map, depth_scale, color_map, fov):
-    h, w = depth_map.shape[:2]
-    focal_length = (w / 2) / math.tan(fov / 2)
+def face_segmentation(depth_img, color_img):
+    face_cascade = cv2.CascadeClassifier('util/haarcascade_frontalface_default.xml')
     
-    point_cloud = []
-    for v in range(h):
-        for u in range(w):
-            d = depth_map[v, u] * depth_scale
-            if d == 0:
-                continue
-
-            x = (u - w / 2) * d / focal_length
-            y = (v - h / 2) * d / focal_length
-            z = -d
-
-            color = color_map[v, u]
-            r, g, b = color
-
-            point_cloud.append((x, y, z, r, g, b))            
-
-    return np.array(point_cloud)
-
-
-def create_point_cloud(depth_path, depth_scale, color_path, fov):
-    #try:
-    depth_map = cv2.imread(depth_path, -1).astype(np.float32) / 1000.0
-    color_map = cv2.imread(color_path)
-    #color_map = cv2.cvtColor(color_map, cv2.COLOR_BAYER_BG2BGR)
+    # Detect faces in color image
+    faces = face_cascade.detectMultiScale(color_img, 1.3, 5)
     
-    if len(depth_map.shape) > 2 and depth_map.shape[2] > 1:
-        print('Expecting a 1D map, but depth map at path %s has shape %r' % (depth_path, depth_map.shape))
-        return
+    # Create mask image
+    mask = np.zeros(depth_img.shape[:2], dtype=np.uint8)
+    
+    # Set face regions in mask to white
+    for (x,y,w,h) in faces:
+        mask[y:y+h, x:x+w] = 255
+    
+    # Apply mask to depth and color images
+    depth_face = cv2.bitwise_and(depth_img, depth_img, mask=mask)
+    color_face = cv2.bitwise_and(color_img, color_img, mask=mask)
+    
+    return depth_face, color_face
 
-    point_cloud = depth_to_point_cloud(depth_map, depth_scale, color_map, fov)
-    return point_cloud
 
+def depth_to_pointcloud_colour(depth_img, color_img, depth_scale=1.0, depth_trunc=5.0, max_depth=10.0, fx=500, fy=500, cx=None, cy=None):
+    H, W, _ = depth_img.shape
+    if cx is None:
+        cx = W // 2
+    if cy is None:
+        cy = H // 2
+    
+    u, v = np.meshgrid(np.arange(W), np.arange(H))
+    u = u.astype(np.float32) - cx
+    v = v.astype(np.float32) - cy
+    
+    depth_img = cv2.cvtColor(depth_img, cv2.COLOR_BGR2RGB)  # Convert depth image from BGR to RGB
+    depth = depth_img.astype(np.float32)
+    
+    # Calculate depth with different weights for each color channel
+    red_weight = 0.6
+    green_weight = 0.2
+    blue_weight = 0.2
+    depth = (red_weight * depth[:, :, 2] + green_weight * depth[:, :, 1] + blue_weight * depth[:, :, 0]) / 255.0
+    
+    # Apply median filtering to depth image
+    depth = cv2.medianBlur(depth, 5)
+    
+    # Adjust depth range
+    min_depth = 0.5  # Minimum depth value (in meters)
+    max_depth = 5.0  # Maximum depth value (in meters)
+    #depth = min_depth + (max_depth - min_depth) * depth
+    
+    depth *= depth_scale
+    depth = np.minimum(depth, depth_trunc)  # Truncate depth values
+    
+    Z = depth
+    X = (u * Z) / fx
+    Y = (v * Z) / fy
+    
+    pointcloud = np.stack((X, Y, Z), axis=2)
+    pointcloud = pointcloud.reshape((-1, 3))
+    
+    color_img = cv2.cvtColor(color_img, cv2.COLOR_BGR2RGB)  # Convert color from BGR to RGB
+    color = color_img.reshape((-1, 3))
+    
+    pointcloud_color = np.concatenate((pointcloud, color), axis=1)
 
-    """
-        # save as .ply
-        header = "ply\nformat ascii 1.0\nelement vertex {}\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n".format(len(point_cloud))
-        with open(output_path, 'w') as f:
-            f.write(header)
-            for point in point_cloud:
-                f.write("{:.6f} {:.6f} {:.6f} {:d} {:d} {:d}\n".format(*point[:3], int(point[3]), int(point[4]), int(point[5])))
-
-        print("Point cloud generated and saved as {}".format(output_path))
-    except IOError as e:
-        print("An error occurred while writing to the output file:")
-        print(str(e))
-    except Exception as e:
-        print("An unexpected error occurred:")
-        print(str(e))
-
-        """
+    # Rotate point cloud by 180 degrees
+    pointcloud_color[:, 1] = -pointcloud_color[:, 1]  # Flip Y axis
+    pointcloud_color[:, 2] = -pointcloud_color[:, 2]  # Flip Z axis
+    
+    return pointcloud_color
