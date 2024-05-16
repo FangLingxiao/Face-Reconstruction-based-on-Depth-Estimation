@@ -4,26 +4,33 @@
 ## Usage
 1. Place one or more input images in the folder `input`.
 
-2. Run the model with
+2. Set up the environment:
 
-`python run.py --layer_num <integer> --input_path <input image path> --output_path save_output`
+    ```bash
+    python -m venv venv/ depth2mesh
+    source venv/depth2mesh/bin/activate
+    pip install -r requirements.txt
+    ```
 
-Pre-trained models are available here:
+3. Checkpoint
 
-Depth Estimation model: [dpt_beit_large_512](https://github.com/isl-org/MiDaS)
+    The [LCM checkpoint](https://huggingface.co/prs-eth/marigold-lcm-v1-0) is distilled from our original checkpoint towards faster inference speed (by reducing inference steps). The inference steps can be as few as 1 to 4
 
-Image Completion model: [Places_512_FullData](https://github.com/fenglinglwb/MAT)
+4. Run FaceReconstruction.ipynb file, you can change the parameters to get better result.
+
 
 ## 1. Introduction
-With the development of Computer Graphics technology as well as deep learning technology, it has become possible to convert 2D images into 3D models using computer algorithms. In the past few years, many implementations of 3D reconstruction techniques have been proposed, some of which have been widely used in areas such as film and television entertainment, intelligent homes, heritage reconstruction, and autonomous driving and etc. A common method to reconstruct a 3D model is to place multiple depth cameras around an object and capture images simultaneously, and then reconstruct the 3D shape of the object based on the captured images. However, since most systems based on this approach require multiple cameras and synchronization devices, it is difficult for most users to use these systems flexibly. In addition, modeling a 3D scene is generally very complex and time-consuming. Especially in distant scenes that do not require much detail, it is not worth spending much time modeling the scene.
+3D face reconstruction from a single image is an important mission of computer vision. It has been broadly exploited in many different applications, from medical surgery to virtual character generation. Over the past decade, the computer graphics and vision community has made rapid progress in algorithms and methods, especially in the era of deep learning, and many of them have yielded excellent results.However, most of those methods use 3D datasets in the training, which consumes a lot of computing power. Moreover, unlike images which can be internet-scale, the the amount of 3D data is limited. 
 
-The data acquisition process required for 2.5D reconstruction is simpler and more economical than that for 3D reconstruction. It typically uses 2D images as input without the complex equipment architecture, which makes it more attractive for individual users, small teams or projects with limited resources. In addition, 2.5D reconstruction is normally faster to process, which makes it practical in applications that require quick results, such as real time surveillance, virtual reality and augmented reality. Hence, in this project, I propose and implement a 2.5D reconstruction method based on monocular camera with user-defined complexity, aiming to make it easier for users to get hands-on and reconstruct the scene model quickly.
+In this project, monocular depth estimation is used to reconstruct 3D faces. Monocular depth estimation is an essential technology in the fields of face recognition, augmented reality, and 3D reconstruction. It reduces the dimensionality of the three-dimensional world and projects it into a two-dimensional image, which requires a large amount of prior knowledge to understand the scene. Because of the emergence of deep learning, more and more data can be used for training, and solving problems such as geometric ill-posedness (Ke et al. 2023).
+ 
+The idea of this project is the following: First, an affine-invariant monocular depth estimation method based on the diffusion model called Marigold was used to generate depth maps. It is obtained through fine-tuning based on the pre-trained Stable Diffusion. Then, as the estimated depth maps contain depth information, they can be utilized to generate point clouds by obtaining spatial information for each pixel point. 
 
-## 2. 2.5D Face Reconstruction Based on Depth Estimation
+## 2. 3D Face Reconstruction Based on Depth Estimation
 The overview diagram is shown in Figure below.
-![pipline](figure/1.jpg)
+![pipline](doc/figure1.jpg)
 
 ## 3. Conclusion
-This project presents a system for synthesizing 2.5D models from monocular 2D images. My approach allows users to customize the number of layers and the distance between layers based on the complexity of the input image. In addition, the system does not require complex hardware devices and can be easily used by general users with 3D software. In the future, I will continue to optimize the performance of the system and hope that the proposed system will help the development of industries such as film and entertainment and medical care.
+This project implemented a diffusion-based solution for depth estimation of 2D images for 3D face reconstruction. This is an ill-posed problem; however, it gives a new perspective to accomplish face 3D reconstruction task. This project not only supports the reconstruction of faces but also any objects. In addition, the system does not require complex hardware devices and can be easily used by general users with 3D software. Future tasks will mainly address the low accuracy of the generated models and noise.
 
 
