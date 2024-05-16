@@ -1,4 +1,4 @@
-# Synthesis of 2.5D Models Based on Monocular ImagesFace Reconstruction Based on Depth Estimation Map
+# Face Reconstruction Based on Depth Estimation
 ### Author: Fang Lingxiao
 
 ## Usage
